@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherPass // Liquid Glass Password Manager</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Liquid Background Blobs -->
+    <div class="liquid-bg-container">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
+    <!-- Toast Notifications Layer -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- App Wrapper -->
+    <div class="app-wrapper">
+        
+        <!-- Sidebar Section -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <i data-lucide="shield-check" class="logo-icon"></i>
+                    </div>
+                    <div class="brand-info">
+                        <h1>AetherPass</h1>
+                        <span>SECURE VAULT</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <span class="stat-label">Total Saves</span>
+                    <span id="stat-total" class="stat-value">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">2FA Active</span>
+                    <span id="stat-2fa" class="stat-value">0</span>
+                </div>
+            </div>
+
+            <!-- Cloud Sync Panel -->
+            <div id="sync-panel" class="sync-panel"></div>
+
+            <nav class="nav-filters">
+                <span class="nav-title">Categories</span>
+                <ul class="nav-list">
+                    <li class="nav-item active" data-filter="all">
+                        <i data-lucide="layout-grid"></i>
+                        <span>All Accounts</span>
+                    </li>
+                    <li class="nav-item" data-filter="google">
+                        <i data-lucide="chrome"></i>
+                        <span>Google</span>
+                    </li>
+                    <li class="nav-item" data-filter="microsoft">
+                        <i data-lucide="box"></i>
+                        <span>Microsoft</span>
+                    </li>
+                    <li class="nav-item" data-filter="youtube">
+                        <i data-lucide="youtube"></i>
+                        <span>YouTube</span>
+                    </li>
+                    <li class="nav-item" data-filter="discord">
+                        <i data-lucide="message-square"></i>
+                        <span>Discord</span>
+                    </li>
+                    <li class="nav-item" data-filter="custom">
+                        <i data-lucide="globe"></i>
+                        <span>Other Apps</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="btn-export" class="btn-secondary-sm">
+                    <i data-lucide="download"></i> Export JSON
+                </button>
+                <button id="btn-import-trigger" class="btn-secondary-sm">
+                    <i data-lucide="upload"></i> Import JSON
+                </button>
+                <input type="file" id="import-file" accept=".json" style="display: none;">
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Panel -->
+        <main class="main-content">
+            <header class="main-header">
+                <div class="search-bar">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search accounts, emails, usernames...">
+                    <button id="search-clear" class="search-clear-btn" style="display: none;">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <button id="btn-open-create" class="btn-primary">
+                    <i data-lucide="plus"></i>
+                    <span>Create Save</span>
+                </button>
+            </header>
+
+            <div class="content-body">
+                <!-- Welcome Section if Empty -->
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon-wrapper">
+                        <i data-lucide="lock" class="empty-icon"></i>
+                    </div>
+                    <h2>No Accounts Saved Yet</h2>
+                    <p>Start securing your digital identity. Create your first credential vault card using the button below.</p>
+                    <button id="btn-empty-create" class="btn-primary">
+                        <i data-lucide="plus"></i> Create Your First Save
+                    </button>
+                </div>
+
+                <!-- Accounts Grid -->
+                <div id="accounts-grid" class="accounts-grid" style="display: none;">
+                    <!-- Dynamically populated cards go here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Create/Edit Save Modal -->
+    <div id="modal-create-save" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-title">Create New Save</h3>
+                <button class="modal-close" id="btn-close-create">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="form-save-account">
+                <input type="hidden" id="edit-account-id">
+                
+                <div class="modal-body">
+                    <!-- Account Selection Selector -->
+                    <div class="form-group">
+                        <label class="form-label">Platform/Account Type</label>
+                        <div class="platform-selector-grid">
+                            <label class="platform-option">
+                                <input type="radio" name="account-platform" value="google" checked>
+                                <span class="platform-btn">
+                                    <i data-lucide="chrome" class="p-icon"></i>
+                                    <span>Google</span>
+                                </span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="account-platform" value="microsoft">
+                                <span class="platform-btn">
+                                    <i data-lucide="box" class="p-icon"></i>
+                                    <span>Microsoft</span>
+                                </span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="account-platform" value="youtube">
+                                <span class="platform-btn">
+                                    <i data-lucide="youtube" class="p-icon"></i>
+                                    <span>YouTube</span>
+                                </span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="account-platform" value="discord">
+                                <span class="platform-btn">
+                                    <i data-lucide="message-square" class="p-icon"></i>
+                                    <span>Discord</span>
+                                </span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="account-platform" value="custom">
+                                <span class="platform-btn">
+                                    <i data-lucide="globe" class="p-icon"></i>
+                                    <span>Custom App</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Custom App Name input (Conditional) -->
+                    <div class="form-group" id="group-custom-name" style="display: none;">
+                        <label for="input-custom-name" class="form-label">App/Website Name</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="link" class="input-icon"></i>
+                            <input type="text" id="input-custom-name" placeholder="e.g., GitHub, Netflix, Spotify">
+                        </div>
+                    </div>
+
+                    <!-- Username input -->
+                    <div class="form-group">
+                        <label for="input-username" class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="input-username" placeholder="Enter username" required>
+                        </div>
+                    </div>
+
+                    <!-- Email input -->
+                    <div class="form-group">
+                        <label for="input-email" class="form-label">Email Address</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="mail" class="input-icon"></i>
+                            <input type="email" id="input-email" placeholder="Enter email address" required>
+                        </div>
+                    </div>
+
+                    <!-- Password input -->
+                    <div class="form-group">
+                        <label for="input-password" class="form-label">Password</label>
+                        <div class="password-input-container">
+                            <div class="input-wrapper pass-wrapper">
+                                <i data-lucide="key-round" class="input-icon"></i>
+                                <input type="password" id="input-password" placeholder="Enter password" required>
+                                <button type="button" id="btn-toggle-password" class="btn-input-action">
+                                    <i data-lucide="eye" id="password-eye-icon"></i>
+                                </button>
+                            </div>
+                            <button type="button" id="btn-generate-password" class="btn-secondary" title="Generate Secure Password">
+                                <i data-lucide="wand2"></i> Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2FA Toggle -->
+                    <div class="form-group 2fa-toggle-group">
+                        <div class="toggle-container">
+                            <div class="toggle-text">
+                                <span class="toggle-title">Two-Factor Authentication (2FA)</span>
+                                <span class="toggle-desc">Enable dynamic 2FA TOTP code generator for this account</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-2fa">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2FA Secret Key input (Conditional) -->
+                    <div class="form-group" id="group-2fa-secret" style="display: none;">
+                        <label for="input-2fa-secret" class="form-label">2FA Secret Key (Base32)</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="qr-code" class="input-icon"></i>
+                            <input type="text" id="input-2fa-secret" placeholder="Enter key (e.g., JBSWY3DPEHPK3PXP)">
+                        </div>
+                        <span class="field-help">Input the Base32 setup key from your provider (spaces will be automatically cleaned).</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btn-cancel-create" class="btn-cancel">Cancel</button>
+                    <button type="submit" id="btn-submit-save" class="btn-primary">Save Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Account Details Modal -->
+    <div id="modal-account-detail" class="modal-overlay">
+        <div class="modal-card detail-card">
+            <div class="modal-header">
+                <h3>Account Details</h3>
+                <button class="modal-close" id="btn-close-detail">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Large Logo / App Title Header -->
+                <div class="detail-header-block">
+                    <div id="detail-logo-wrapper" class="detail-logo-wrapper">
+                        <i data-lucide="chrome" id="detail-app-icon" class="detail-app-icon"></i>
+                    </div>
+                    <h2 id="detail-app-name">Google Account</h2>
+                    <span id="detail-created-at" class="detail-created-at">Saved: Jan 1, 2026</span>
+                </div>
+
+                <!-- Credentials Info Fields -->
+                <div class="detail-fields-list">
+                    
+                    <div class="detail-field-item">
+                        <div class="field-meta">
+                            <span class="field-title">Username</span>
+                            <span id="detail-val-username" class="field-val">username_here</span>
+                        </div>
+                        <button class="btn-icon-copy" id="btn-copy-username-detail" title="Copy Username">
+                            <i data-lucide="copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="detail-field-item">
+                        <div class="field-meta">
+                            <span class="field-title">Email Address</span>
+                            <span id="detail-val-email" class="field-val">email@gmail.com</span>
+                        </div>
+                        <button class="btn-icon-copy" id="btn-copy-email-detail" title="Copy Email">
+                            <i data-lucide="copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="detail-field-item">
+                        <div class="field-meta">
+                            <span class="field-title">Password</span>
+                            <span id="detail-val-password" class="field-val password-obfuscated">••••••••••••••••</span>
+                        </div>
+                        <div class="detail-password-actions">
+                            <button class="btn-icon-copy" id="btn-toggle-password-detail" title="Reveal Password">
+                                <i data-lucide="eye" id="detail-password-eye"></i>
+                            </button>
+                            <button class="btn-icon-copy" id="btn-copy-password-detail" title="Copy Password">
+                                <i data-lucide="copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2FA Section (Toggled) -->
+                <div id="detail-2fa-section" class="detail-2fa-container" style="display: none;">
+                    <div class="detail-2fa-header">
+                        <i data-lucide="shield-check" class="shield-active-icon"></i>
+                        <div class="title-meta">
+                            <h4>2FA Authentication Code</h4>
+                            <span class="desc">Dynamic security code generated locally</span>
+                        </div>
+                    </div>
+                    <div class="totp-display-block">
+                        <span id="detail-totp-val" class="totp-code">000 000</span>
+                        <div class="totp-timer-container">
+                            <svg class="progress-ring" width="40" height="40">
+                                <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.06)" stroke-width="4" fill="transparent" r="16" cx="20" cy="20"/>
+                                <circle id="totp-countdown-circle" class="progress-ring__circle" stroke="#ffffff" stroke-width="4" fill="transparent" r="16" cx="20" cy="20"/>
+                            </svg>
+                            <span id="totp-countdown-text" class="totp-timer-text">30</span>
+                        </div>
+                    </div>
+                    <button class="btn-totp-copy" id="btn-copy-totp-detail">
+                        <i data-lucide="copy"></i> Copy 2FA Code
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer detail-footer">
+                <button id="btn-delete-detail" class="btn-danger">
+                    <i data-lucide="trash-2"></i> Delete Card
+                </button>
+                <div class="footer-right-buttons">
+                    <button id="btn-edit-detail" class="btn-secondary">
+                        <i data-lucide="edit-3"></i> Edit
+                    </button>
+                    <button id="btn-close-detail-footer" class="btn-primary">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="modal-confirm-delete" class="modal-overlay delete-confirm-overlay">
+        <div class="modal-card confirm-card">
+            <div class="modal-header">
+                <h3>Delete Saved Account?</h3>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete this credential card for <strong id="delete-account-name">Google</strong>? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel-delete" class="btn-secondary">Cancel</button>
+                <button id="btn-confirm-delete" class="btn-danger-solid">Delete Vault Card</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vault Auth Modal -->
+    <div id="modal-auth" class="modal-overlay">
+        <div class="modal-card auth-card">
+            <div class="modal-header">
+                <h3>Vault Cloud Sync</h3>
+                <button class="modal-close" id="btn-close-auth">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="tab-login-btn">Log In</button>
+                <button class="auth-tab-btn" id="tab-signup-btn">Sign Up</button>
+            </div>
+
+            <form id="form-auth">
+                <input type="hidden" id="auth-mode" value="login">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="input-auth-username" class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="input-auth-username" placeholder="Enter username" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-auth-password" class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="lock" class="input-icon"></i>
+                            <input type="password" id="input-auth-password" placeholder="Enter master password" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="group-auth-confirm" style="display: none;">
+                        <label for="input-auth-confirm" class="form-label">Confirm Password</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="lock-keyhole" class="input-icon"></i>
+                            <input type="password" id="input-auth-confirm" placeholder="Repeat master password">
+                        </div>
+                    </div>
+                    
+                    <div id="auth-error-msg" class="auth-error-message" style="display: none;"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btn-cancel-auth" class="btn-cancel">Cancel</button>
+                    <button type="submit" id="btn-submit-auth" class="btn-primary">Authenticate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script file -->
+    <script src="app.js"></script>
+</body>
+</html>
