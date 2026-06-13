@@ -961,7 +961,7 @@ async function handleAuthSubmit(e) {
     elements.btnSubmitAuth.disabled = true;
     elements.btnSubmitAuth.textContent = "Processing...";
     
-    const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
     
     try {
         const response = await fetch(API_BASE + endpoint, {
