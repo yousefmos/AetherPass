@@ -39,6 +39,10 @@ if (process.env.DATABASE_URL) {
             rejectUnauthorized: false
         }
     });
+    // Prevent unhandled error exceptions on idle PostgreSQL pool clients
+    pool.on('error', (err) => {
+        console.error('Unexpected error on idle PostgreSQL client:', err);
+    });
     dbType = 'postgres';
     console.log("⚡ Database: PostgreSQL Mode Enabled");
 } else {
@@ -81,6 +85,10 @@ async function initDB() {
         } catch (err) {
             console.error("❌ Database: PostgreSQL initialization failed, falling back to local JSON:", err);
             dbType = 'json';
+            if (pool) {
+                pool.end().catch(() => {});
+                pool = null;
+            }
             initJSONDB();
         }
     } else {

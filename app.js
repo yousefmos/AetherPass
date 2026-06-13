@@ -851,6 +851,21 @@ function importBackup(e) {
 // Sync & Authentication Handlers
 // ==========================================================================
 
+async function parseJsonResponse(response) {
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        if (text.includes("Bad Gateway") || response.status === 502) {
+            throw new Error("Render Service Error (502 Bad Gateway). The backend server may have crashed or is booting up. Please check Render logs.");
+        }
+        if (text.includes("Service Unavailable") || response.status === 503) {
+            throw new Error("Render Service Error (503 Service Unavailable). The backend server is sleeping or starting up.");
+        }
+        throw new Error(`Server returned non-JSON response (Status ${response.status}). Please check your server logs.`);
+    }
+    return await response.json();
+}
+
 function updateSyncPanel() {
     if (!elements.syncPanel) return;
     
@@ -955,7 +970,7 @@ async function handleAuthSubmit(e) {
             body: JSON.stringify({ username: authUsername, password: authPassword })
         });
         
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         
         if (!response.ok || !data.success) {
             throw new Error(data.error || "Authentication failed.");
@@ -1011,7 +1026,7 @@ async function pushVault(silent = false) {
             body: JSON.stringify({ vault: accounts })
         });
         
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         if (!response.ok || !data.success) {
             throw new Error(data.error || "Failed to push sync data.");
         }
@@ -1042,7 +1057,7 @@ async function pullVault(silent = false) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         if (!response.ok || !data.success) {
             throw new Error(data.error || "Failed to pull cloud sync data.");
         }
